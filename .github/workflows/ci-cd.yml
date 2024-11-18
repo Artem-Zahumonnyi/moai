@@ -36,3 +36,59 @@ jobs:
         ignore-unfixed: true
         vuln-type: 'os,library'
         severity: 'CRITICAL,HIGH'
+
+    - name: Set up JMeter
+      run: |
+        wget https://downloads.apache.org/jmeter/binaries/apache-jmeter-5.5.tgz
+        tar -xzf apache-jmeter-5.5.tgz
+        
+    - name: Start application for testing
+      run: |
+        docker run -d -p 8080:8080 moai-app:${{ github.sha }}
+        sleep 10  # Wait for application to start
+
+    - name: Create JMeter test plan
+      run: |
+        cat << EOF > performance-test.jmx
+        <?xml version="1.0" encoding="UTF-8"?>
+        <jmeterTestPlan version="1.2" properties="5.0">
+          <hashTree>
+            <TestPlan guiclass="TestPlanGui" testclass="TestPlan" testname="Moai App Test Plan">
+              <elementProp name="TestPlan.user_defined_variables" elementType="Arguments">
+                <collectionProp name="Arguments.arguments"/>
+              </elementProp>
+            </TestPlan>
+            <hashTree>
+              <ThreadGroup guiclass="ThreadGroupGui" testclass="ThreadGroup" testname="Thread Group">
+                <elementProp name="ThreadGroup.main_controller" elementType="LoopController">
+                  <intProp name="LoopController.loops">10</intProp>
+                </elementProp>
+                <stringProp name="ThreadGroup.num_threads">50</stringProp>
+              </ThreadGroup>
+              <hashTree>
+                <HTTPSamplerProxy guiclass="HttpTestSampleGui" testclass="HTTPSamplerProxy">
+                  <stringProp name="HTTPSampler.domain">localhost</stringProp>
+                  <stringProp name="HTTPSampler.port">8080</stringProp>
+                  <stringProp name="HTTPSampler.path">/</stringProp>
+                  <stringProp name="HTTPSampler.method">GET</stringProp>
+                </HTTPSamplerProxy>
+              </hashTree>
+            </hashTree>
+          </hashTree>
+        </jmeterTestPlan>
+        EOF
+
+    - name: Run performance tests
+      run: |
+        apache-jmeter-5.5/bin/jmeter -n -t performance-test.jmx -l test-results.jtl
+
+    - name: Generate performance report
+      run: |
+        echo "Performance Test Results" > performance-report.txt
+        cat test-results.jtl >> performance-report.txt
+
+    - name: Upload performance results
+      uses: actions/upload-artifact@v2
+      with:
+        name: performance-results
+        path: performance-report.txt
