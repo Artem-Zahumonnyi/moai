@@ -55,8 +55,8 @@ jobs:
 
     - name: Set up JMeter
       run: |
-        wget https://downloads.apache.org/jmeter/binaries/apache-jmeter-5.6.2.tgz
-        tar -xzf apache-jmeter-5.6.2.tgz
+        wget https://downloads.apache.org/jmeter/binaries/apache-jmeter-5.6.3.tgz
+        tar -xzf apache-jmeter-5.6.3.tgz
         
     - name: Start application for testing
       run: |
@@ -96,7 +96,7 @@ jobs:
 
     - name: Run performance tests
       run: |
-        apache-jmeter-5.6.2/bin/jmeter -n -t performance-test.jmx -l test-results.jtl
+        apache-jmeter-5.6.3/bin/jmeter -n -t performance-test.jmx -l test-results.jtl
 
     - name: Generate performance report
       run: |
